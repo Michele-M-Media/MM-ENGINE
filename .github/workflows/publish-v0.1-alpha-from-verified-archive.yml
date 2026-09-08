@@ -4,7 +4,7 @@ on:
   push:
     branches: [ main ]
     paths:
-      - '.release-stage/public-release.tar.xz'
+      - '.release-stage/READY'
 
 permissions:
   contents: write
@@ -18,20 +18,37 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Verify and extract source release
+      - name: Reconstruct and verify source release
         shell: bash
         run: |
           set -euo pipefail
-          echo "97014d02e5fe4668d7a831af90d686cd20b5ac15dab5bd6fee0dd39fa052ece3  .release-stage/public-release.tar.xz" | sha256sum -c -
+          test -f .release-stage/READY
+          test "$(find .release-stage -maxdepth 1 -type f -name 'p4-*' | wc -l)" -eq 29
+          for i in $(seq -w 0 27); do test "$(stat -c '%s' .release-stage/p4-$i)" -eq 4000; done
+          test "$(stat -c '%s' .release-stage/p4-28)" -eq 1120
+          cat .release-stage/p4-* > /tmp/mm-engine-public-release.tar.xz
+          test "$(stat -c '%s' /tmp/mm-engine-public-release.tar.xz)" -eq 113120
+          echo "252e860e9f8832cc2565f69dd06327eb39d0ecaff22cecb7583d864101d61ade  /tmp/mm-engine-public-release.tar.xz" | sha256sum -c -
+
           rm -rf /tmp/mm-engine-public-release
           mkdir -p /tmp/mm-engine-public-release
-          tar -xJf .release-stage/public-release.tar.xz -C /tmp/mm-engine-public-release
+          tar -xJf /tmp/mm-engine-public-release.tar.xz -C /tmp/mm-engine-public-release
+
+          # The compact staging archive omits two identical DejaVuSans copies.
+          # Restore only after verifying the runner font is byte-identical to
+          # the font recorded by the public release manifest.
+          FONT=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf
+          test -f "$FONT"
+          echo "ae7b7855e115a5966d8b1b3f80f254ccc117ec86f9965e202ee2940453837280  $FONT" | sha256sum -c -
+          install -D -m 0644 "$FONT" /tmp/mm-engine-public-release/samples/Hello2D/assets/DejaVuSans.ttf
+          install -D -m 0644 "$FONT" /tmp/mm-engine-public-release/samples/InputDemo/assets/DejaVuSans.ttf
 
           test "$(find /tmp/mm-engine-public-release -type f | wc -l)" -eq 133
           test -f /tmp/mm-engine-public-release/README.md
           test -f /tmp/mm-engine-public-release/LICENSE
           test -f /tmp/mm-engine-public-release/.github/FUNDING.yml
           test -f /tmp/mm-engine-public-release/.github/workflows/ci.yml
+          test -f /tmp/mm-engine-public-release/docs/MM_ENGINE_COMPLETE_BUILD_PACKAGING_AND_DIAGNOSTICS_GUIDE.txt
           test -d /tmp/mm-engine-public-release/src
           test -d /tmp/mm-engine-public-release/samples
           test -d /tmp/mm-engine-public-release/tools
@@ -76,7 +93,7 @@ jobs:
               if p.is_file() and any(part in forbidden for part in p.parts):
                   raise SystemExit(f'forbidden generated path: {p}')
 
-          print('archive static verification OK')
+          print('release static verification OK')
           PY
 
       - name: Setup .NET 10
@@ -101,5 +118,6 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
+          git diff --cached --quiet && { echo 'No publication changes'; exit 1; }
           git commit -m 'Publish MM ENGINE v0.1-alpha public source release'
           git push origin HEAD:main
