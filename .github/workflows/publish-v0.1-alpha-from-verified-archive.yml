@@ -1,0 +1,105 @@
+name: Publish verified v0.1-alpha source release
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '.release-stage/public-release.tar.xz'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify and extract source release
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "97014d02e5fe4668d7a831af90d686cd20b5ac15dab5bd6fee0dd39fa052ece3  .release-stage/public-release.tar.xz" | sha256sum -c -
+          rm -rf /tmp/mm-engine-public-release
+          mkdir -p /tmp/mm-engine-public-release
+          tar -xJf .release-stage/public-release.tar.xz -C /tmp/mm-engine-public-release
+
+          test "$(find /tmp/mm-engine-public-release -type f | wc -l)" -eq 133
+          test -f /tmp/mm-engine-public-release/README.md
+          test -f /tmp/mm-engine-public-release/LICENSE
+          test -f /tmp/mm-engine-public-release/.github/FUNDING.yml
+          test -f /tmp/mm-engine-public-release/.github/workflows/ci.yml
+          test -d /tmp/mm-engine-public-release/src
+          test -d /tmp/mm-engine-public-release/samples
+          test -d /tmp/mm-engine-public-release/tools
+          test -d /tmp/mm-engine-public-release/docs
+          test ! -d /tmp/mm-engine-public-release/.bootstrap
+          test ! -d /tmp/mm-engine-public-release/.release-stage
+
+          cd /tmp/mm-engine-public-release
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, json, xml.etree.ElementTree as ET
+
+          manifest = Path('MANIFEST.sha256')
+          entries = 0
+          for line in manifest.read_text(encoding='utf-8').splitlines():
+              line = line.strip()
+              if not line:
+                  continue
+              digest, rel = line.split(None, 1)
+              rel = rel.strip()
+              if rel.startswith('./'):
+                  rel = rel[2:]
+              p = Path(rel)
+              if not p.is_file():
+                  raise SystemExit(f'manifest missing file: {rel}')
+              actual = hashlib.sha256(p.read_bytes()).hexdigest()
+              if actual != digest:
+                  raise SystemExit(f'manifest mismatch: {rel}')
+              entries += 1
+          if entries != 132:
+              raise SystemExit(f'expected 132 manifest entries, got {entries}')
+
+          for p in Path('.').rglob('*.json'):
+              json.loads(p.read_text(encoding='utf-8-sig'))
+
+          for pattern in ('*.csproj', '*.props', '*.targets', '*.slnx'):
+              for p in Path('.').rglob(pattern):
+                  ET.fromstring(p.read_text(encoding='utf-8-sig'))
+
+          forbidden = {'bin', 'obj', 'out', 'artifacts'}
+          for p in Path('.').rglob('*'):
+              if p.is_file() and any(part in forbidden for part in p.parts):
+                  raise SystemExit(f'forbidden generated path: {p}')
+
+          print('archive static verification OK')
+          PY
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build and test portable release
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /tmp/mm-engine-public-release
+          dotnet restore MMEngine.Portable.slnx
+          dotnet build MMEngine.Portable.slnx -c Release --no-restore
+          dotnet run --project tests/MMEngine.Tests/MMEngine.Tests.csproj -c Release --no-build
+
+      - name: Publish repository tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          rsync -a --delete --exclude='.git/' /tmp/mm-engine-public-release/ ./
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Publish MM ENGINE v0.1-alpha public source release'
+          git push origin HEAD:main
