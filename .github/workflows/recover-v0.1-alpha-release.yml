@@ -20,14 +20,60 @@ jobs:
       - name: Inspect staged chunk payload
         shell: bash
         run: |
-          set -euo pipefail
+          set -u
           echo 'Chunk files:'
           ls -l .bootstrap/chunk-* || true
-          cat .bootstrap/chunk-* | base64 -d > /tmp/recovered-release.tar.gz
-          echo 'Recovered payload:'
-          ls -l /tmp/recovered-release.tar.gz
-          sha256sum /tmp/recovered-release.tar.gz
-          file /tmp/recovered-release.tar.gz
-          echo 'Archive manifest:'
-          tar -tzf /tmp/recovered-release.tar.gz | tee /tmp/recovered-manifest.txt
-          echo "FILE_COUNT=$(wc -l < /tmp/recovered-manifest.txt)"
+          echo 'Character validation:'
+          python3 - <<'PY'
+          from pathlib import Path
+          import string
+          files = sorted(Path('.bootstrap').glob('chunk-*'))
+          allowed = set(string.ascii_letters + string.digits + '+/=\r\n\t ')
+          for p in files:
+              s = p.read_text(errors='replace')
+              bad = [(i, repr(ch)) for i, ch in enumerate(s) if ch not in allowed]
+              print(p, 'chars=', len(s), 'bad_count=', len(bad), 'first_bad=', bad[:8])
+          PY
+
+          echo 'Method A: concatenate encoded text, strip whitespace, decode once'
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64, hashlib, re
+          files = sorted(Path('.bootstrap').glob('chunk-*'))
+          s = ''.join(p.read_text() for p in files)
+          compact = re.sub(r'\s+', '', s)
+          print('encoded chars', len(compact), 'mod4', len(compact)%4)
+          try:
+              data = base64.b64decode(compact, validate=True)
+              Path('/tmp/recovered-A.tar.gz').write_bytes(data)
+              print('A bytes', len(data), 'sha256', hashlib.sha256(data).hexdigest())
+          except Exception as e:
+              print('A decode failed:', repr(e))
+          PY
+          if [ -f /tmp/recovered-A.tar.gz ]; then
+            file /tmp/recovered-A.tar.gz || true
+            tar -tzf /tmp/recovered-A.tar.gz > /tmp/manifest-A.txt 2>/tmp/tar-A.err || true
+            echo "A_FILE_COUNT=$(wc -l < /tmp/manifest-A.txt)"
+            cat /tmp/tar-A.err || true
+            head -200 /tmp/manifest-A.txt || true
+          fi
+
+          echo 'Method B: decode each chunk separately, then concatenate binary pieces'
+          : > /tmp/recovered-B.tar.gz
+          method_b_ok=1
+          for f in .bootstrap/chunk-*; do
+            if ! base64 -d "$f" >> /tmp/recovered-B.tar.gz; then
+              echo "B decode failed on $f"
+              method_b_ok=0
+              break
+            fi
+          done
+          if [ "$method_b_ok" -eq 1 ]; then
+            ls -l /tmp/recovered-B.tar.gz
+            sha256sum /tmp/recovered-B.tar.gz
+            file /tmp/recovered-B.tar.gz || true
+            tar -tzf /tmp/recovered-B.tar.gz > /tmp/manifest-B.txt 2>/tmp/tar-B.err || true
+            echo "B_FILE_COUNT=$(wc -l < /tmp/manifest-B.txt)"
+            cat /tmp/tar-B.err || true
+            head -200 /tmp/manifest-B.txt || true
+          fi
