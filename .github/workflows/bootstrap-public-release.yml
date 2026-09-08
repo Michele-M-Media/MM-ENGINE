@@ -3,7 +3,7 @@ name: Bootstrap public release
 on:
   push:
     paths:
-      - '.bootstrap/p-035'
+      - '.bootstrap/q-045'
 
 permissions:
   contents: write
@@ -21,10 +21,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cat .bootstrap/p-* | base64 -d > /tmp/mm-engine-public-release.tar.gz
-          echo "2afd827ab7cc1823538bd387ffd558960b7b6f2d015d82c8550500fe0bbed707  /tmp/mm-engine-public-release.tar.gz" | sha256sum -c -
+          cat .bootstrap/q-* | base64 -d > /tmp/mm-engine-public-release.tar.xz
+          echo "4200a02c544dabbcf9e6c7be5f819e10a06aa95d7d2a9ff91c9cf1ee283c2b0b  /tmp/mm-engine-public-release.tar.xz" | sha256sum -c -
           mkdir -p /tmp/mm-engine-public-release
-          tar -xzf /tmp/mm-engine-public-release.tar.gz -C /tmp/mm-engine-public-release
+          tar -xJf /tmp/mm-engine-public-release.tar.xz -C /tmp/mm-engine-public-release
 
       - name: Publish repository tree
         shell: bash
