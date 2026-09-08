@@ -1,0 +1,31 @@
+name: Validate v0.1-alpha slim staging
+
+on:
+  push:
+    branches: [ v0.1-alpha-publish-stage2 ]
+    paths:
+      - '.github/workflows/validate-slim-stage.yml'
+      - '.release-stage/slim-*'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Validate reconstructed slim payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          ls -l .release-stage/slim-*
+          cat .release-stage/slim-* > /tmp/mm-engine-public-release.b64
+          wc -c /tmp/mm-engine-public-release.b64
+          base64 -d /tmp/mm-engine-public-release.b64 > /tmp/mm-engine-public-release.tar.xz
+          stat -c '%s' /tmp/mm-engine-public-release.tar.xz
+          sha256sum /tmp/mm-engine-public-release.tar.xz
+          xz -t /tmp/mm-engine-public-release.tar.xz
+          echo "tar entries: $(tar -tJf /tmp/mm-engine-public-release.tar.xz | wc -l)"
+          echo "files: $(tar -tJf /tmp/mm-engine-public-release.tar.xz | grep -v '/$' | wc -l)"
