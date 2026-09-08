@@ -78,11 +78,10 @@ The bundled ModelViewer fixture is original to this repository. The DualSense mo
 
 The diagnostic lineage remains explicit: MM API Mapper informs MM PS5 CONTROL, which in turn informs MM ENGINE. This bootstrap owns engine/frame/capability diagnostics; it does not copy the control application or fabricate console-health APIs that the supplied SDK does not verify.
 
-
 ## Public alpha resources
 
 - [First public alpha release notes](PUBLIC_RELEASE_NOTES.md)
-- [Complete build and diagnostics guide](docs/MM_ENGINE_GUIDA_COMPLETA_COMPILAZIONE_E_ERRORI.txt)
+- [Complete build, packaging, and diagnostics guide](docs/MM_ENGINE_COMPLETE_BUILD_PACKAGING_AND_DIAGNOSTICS_GUIDE.txt)
 - [Validation update — 2026-09-08](docs/VALIDATION_UPDATE_2026-09-08.md)
 - [Roadmap](ROADMAP.md)
 - [Contributing](CONTRIBUTING.md)
