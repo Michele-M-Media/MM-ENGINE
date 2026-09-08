@@ -1,0 +1,33 @@
+name: Recover v0.1-alpha release payload
+
+on:
+  push:
+    branches:
+      - v0.1-alpha-release-recovery
+    paths:
+      - '.github/workflows/recover-v0.1-alpha-release.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Inspect staged chunk payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo 'Chunk files:'
+          ls -l .bootstrap/chunk-* || true
+          cat .bootstrap/chunk-* | base64 -d > /tmp/recovered-release.tar.gz
+          echo 'Recovered payload:'
+          ls -l /tmp/recovered-release.tar.gz
+          sha256sum /tmp/recovered-release.tar.gz
+          file /tmp/recovered-release.tar.gz
+          echo 'Archive manifest:'
+          tar -tzf /tmp/recovered-release.tar.gz | tee /tmp/recovered-manifest.txt
+          echo "FILE_COUNT=$(wc -l < /tmp/recovered-manifest.txt)"
