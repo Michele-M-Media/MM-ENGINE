@@ -3,7 +3,7 @@ name: Bootstrap public release
 on:
   push:
     paths:
-      - '.bootstrap/payload-028'
+      - '.bootstrap/chunk-14'
 
 permissions:
   contents: write
@@ -21,7 +21,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cat .bootstrap/payload-* | base64 -d > /tmp/mm-engine-public-release.tar.gz
+          cat .bootstrap/chunk-* | base64 -d > /tmp/mm-engine-public-release.tar.gz
           echo "2afd827ab7cc1823538bd387ffd558960b7b6f2d015d82c8550500fe0bbed707  /tmp/mm-engine-public-release.tar.gz" | sha256sum -c -
           mkdir -p /tmp/mm-engine-public-release
           tar -xzf /tmp/mm-engine-public-release.tar.gz -C /tmp/mm-engine-public-release
