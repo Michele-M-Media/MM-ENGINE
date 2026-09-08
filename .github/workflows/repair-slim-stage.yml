@@ -1,0 +1,127 @@
+name: Repair v0.1-alpha slim staging
+
+on:
+  push:
+    branches: [ v0.1-alpha-publish-stage2 ]
+    paths:
+      - '.github/workflows/repair-slim-stage.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Recover one missing Base64 symbol
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64, hashlib, multiprocessing as mp, os, sys, time
+
+          root = Path('.release-stage')
+          names = ['slim-00','slim-01','slim-02','slim-03','slim-04','slim-05a','slim-05b','slim-05c','slim-05d']
+          parts = {n: (root/n).read_bytes() for n in names}
+          pre = parts['slim-00']
+          bad = parts['slim-01']
+          post = b''.join(parts[n] for n in names[2:])
+          target = bytes.fromhex('5e6687d98270cdc43a7a17e8112c06b9b78a34f6425e514448c04e7d49431cae')
+          alphabet = b'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+
+          print('sizes:', {n: len(parts[n]) for n in names}, flush=True)
+          combined = pre + bad + post
+          print('combined chars:', len(combined), 'mod4:', len(combined)%4, flush=True)
+
+          if len(combined) % 4 == 0:
+              try:
+                  data = base64.b64decode(combined, validate=True)
+              except Exception as e:
+                  raise SystemExit(f'base64 decode failed even though length is aligned: {e}')
+              got = hashlib.sha256(data).digest()
+              print('current sha256:', got.hex(), flush=True)
+              if got == target:
+                  print('payload already repaired', flush=True)
+                  raise SystemExit(0)
+              raise SystemExit('aligned payload does not match expected SHA-256')
+
+          if len(combined) % 4 != 3 or len(bad) != 19999:
+              raise SystemExit('unexpected staging shape; refusing blind repair')
+
+          # Cheap likely-boundary probes first.
+          likely = list(range(0, 16)) + list(range(max(0, len(bad)-16), len(bad)+1))
+          def test_pos(i):
+              buf = bytearray(pre + bad[:i] + b'A' + bad[i:] + post)
+              idx = len(pre) + i
+              for c in alphabet:
+                  buf[idx] = c
+                  data = base64.b64decode(buf, validate=True)
+                  if hashlib.sha256(data).digest() == target:
+                      return i, chr(c)
+              return None
+
+          for i in likely:
+              hit = test_pos(i)
+              if hit:
+                  print('FOUND boundary hit', hit, flush=True)
+                  pos, ch = hit
+                  fixed = bad[:pos] + ch.encode('ascii') + bad[pos:]
+                  (root/'slim-01').write_bytes(fixed)
+                  raise SystemExit(10)
+
+          # Full deterministic search. Two workers split the 19,?99 insertion positions.
+          # Each worker reuses one mutable candidate buffer per position and only changes
+          # the inserted Base64 symbol for the 64 possibilities.
+          GLOBAL = {}
+          def init_worker(pre_, bad_, post_, target_):
+              GLOBAL['pre']=pre_; GLOBAL['bad']=bad_; GLOBAL['post']=post_; GLOBAL['target']=target_
+
+          def search_range(bounds):
+              start, end = bounds
+              pre_ = GLOBAL['pre']; bad_ = GLOBAL['bad']; post_ = GLOBAL['post']; target_ = GLOBAL['target']
+              for i in range(start, end):
+                  if i % 1000 == 0:
+                      print(f'worker {os.getpid()} position {i}', flush=True)
+                  buf = bytearray(pre_ + bad_[:i] + b'A' + bad_[i:] + post_)
+                  idx = len(pre_) + i
+                  for c in alphabet:
+                      buf[idx] = c
+                      data = base64.b64decode(buf, validate=True)
+                      if hashlib.sha256(data).digest() == target_:
+                          return i, chr(c)
+              return None
+
+          mid = (len(bad)+1)//2
+          ranges = [(0, mid), (mid, len(bad)+1)]
+          t0=time.time()
+          with mp.Pool(processes=2, initializer=init_worker, initargs=(pre,bad,post,target)) as pool:
+              for hit in pool.imap_unordered(search_range, ranges):
+                  if hit:
+                      pool.terminate()
+                      pool.join()
+                      print('FOUND full-search hit', hit, 'seconds', time.time()-t0, flush=True)
+                      pos, ch = hit
+                      fixed = bad[:pos] + ch.encode('ascii') + bad[pos:]
+                      (root/'slim-01').write_bytes(fixed)
+                      raise SystemExit(10)
+
+          raise SystemExit('no one-character repair matched expected SHA-256')
+          PY
+          status=$?
+          if [ "$status" -ne 0 ] && [ "$status" -ne 10 ]; then
+            exit "$status"
+          fi
+          if [ "$status" -eq 10 ]; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add .release-stage/slim-01
+            git commit -m 'Repair verified v0.1-alpha staging payload'
+            git push origin HEAD:v0.1-alpha-publish-stage2
+          fi
