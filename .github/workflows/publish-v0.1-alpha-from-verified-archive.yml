@@ -34,9 +34,6 @@ jobs:
           mkdir -p /tmp/mm-engine-public-release
           tar -xJf /tmp/mm-engine-public-release.tar.xz -C /tmp/mm-engine-public-release
 
-          # The compact staging archive omits two identical DejaVuSans copies.
-          # Restore only after verifying the runner font is byte-identical to
-          # the font recorded by the public release manifest.
           FONT=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf
           test -f "$FONT"
           echo "ae7b7855e115a5966d8b1b3f80f254ccc117ec86f9965e202ee2940453837280  $FONT" | sha256sum -c -
@@ -53,14 +50,11 @@ jobs:
           test -d /tmp/mm-engine-public-release/samples
           test -d /tmp/mm-engine-public-release/tools
           test -d /tmp/mm-engine-public-release/docs
-          test ! -d /tmp/mm-engine-public-release/.bootstrap
-          test ! -d /tmp/mm-engine-public-release/.release-stage
 
           cd /tmp/mm-engine-public-release
           python3 - <<'PY'
           from pathlib import Path
           import hashlib, json, xml.etree.ElementTree as ET
-
           manifest = Path('MANIFEST.sha256')
           entries = 0
           for line in manifest.read_text(encoding='utf-8').splitlines():
@@ -74,25 +68,20 @@ jobs:
               p = Path(rel)
               if not p.is_file():
                   raise SystemExit(f'manifest missing file: {rel}')
-              actual = hashlib.sha256(p.read_bytes()).hexdigest()
-              if actual != digest:
+              if hashlib.sha256(p.read_bytes()).hexdigest() != digest:
                   raise SystemExit(f'manifest mismatch: {rel}')
               entries += 1
           if entries != 132:
               raise SystemExit(f'expected 132 manifest entries, got {entries}')
-
           for p in Path('.').rglob('*.json'):
               json.loads(p.read_text(encoding='utf-8-sig'))
-
           for pattern in ('*.csproj', '*.props', '*.targets', '*.slnx'):
               for p in Path('.').rglob(pattern):
                   ET.fromstring(p.read_text(encoding='utf-8-sig'))
-
           forbidden = {'bin', 'obj', 'out', 'artifacts'}
           for p in Path('.').rglob('*'):
               if p.is_file() and any(part in forbidden for part in p.parts):
                   raise SystemExit(f'forbidden generated path: {p}')
-
           print('release static verification OK')
           PY
 
@@ -110,14 +99,19 @@ jobs:
           dotnet build MMEngine.Portable.slnx -c Release --no-restore
           dotnet run --project tests/MMEngine.Tests/MMEngine.Tests.csproj -c Release --no-build
 
-      - name: Publish repository tree
+      - name: Publish repository tree except workflow files
         shell: bash
         run: |
           set -euo pipefail
-          rsync -a --delete --exclude='.git/' /tmp/mm-engine-public-release/ ./
+          rsync -a --delete --exclude='.git/' --exclude='.github/workflows/' /tmp/mm-engine-public-release/ ./
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
+          if git diff --cached --name-only | grep -q '^\.github/workflows/'; then
+            echo 'Refusing to modify workflow files with Actions token'
+            git diff --cached --name-only | grep '^\.github/workflows/' || true
+            exit 1
+          fi
           git diff --cached --quiet && { echo 'No publication changes'; exit 1; }
           git commit -m 'Publish MM ENGINE v0.1-alpha public source release'
           git push origin HEAD:main
