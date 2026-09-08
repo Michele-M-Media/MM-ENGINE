@@ -1,0 +1,23 @@
+name: Check DejaVu baseline
+
+on:
+  push:
+    branches: [ v0.1-alpha-publish-stage2 ]
+    paths:
+      - '.github/workflows/check-dejavu-baseline.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Inspect system DejaVuSans
+        shell: bash
+        run: |
+          set -euo pipefail
+          p=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf
+          test -f "$p"
+          stat -c '%s' "$p"
+          sha256sum "$p"
