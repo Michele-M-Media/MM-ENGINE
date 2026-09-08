@@ -1,0 +1,61 @@
+name: Portable CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  portable:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore portable solution
+        run: dotnet restore MMEngine.Portable.slnx
+
+      - name: Build portable solution
+        run: dotnet build MMEngine.Portable.slnx -c Release --no-restore
+
+      - name: Run portable tests
+        run: dotnet run --project tests/MMEngine.Tests/MMEngine.Tests.csproj -c Release --no-build
+
+      - name: Verify source manifest
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          manifest = Path('MANIFEST.sha256')
+          if not manifest.exists():
+              raise SystemExit('MANIFEST.sha256 missing')
+          bad = []
+          for line in manifest.read_text(encoding='utf-8').splitlines():
+              line = line.strip()
+              if not line:
+                  continue
+              digest, rel = line.split(None, 1)
+              rel = rel.strip()
+              if rel.startswith('./'):
+                  rel = rel[2:]
+              p = Path(rel)
+              if not p.exists():
+                  bad.append(f'missing: {rel}')
+                  continue
+              actual = hashlib.sha256(p.read_bytes()).hexdigest()
+              if actual != digest:
+                  bad.append(f'hash mismatch: {rel}')
+          if bad:
+              raise SystemExit('\n'.join(bad))
+          print('Manifest OK')
+          PY
