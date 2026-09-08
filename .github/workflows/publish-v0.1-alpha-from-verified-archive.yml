@@ -23,14 +23,23 @@ jobs:
         run: |
           set -euo pipefail
           test -f .release-stage/READY
-          test "$(find .release-stage -maxdepth 1 -type f -name 'chunk-*' | wc -l)" -eq 28
-          cat .release-stage/chunk-* > /tmp/mm-engine-public-release.b64
+          test "$(find .release-stage -maxdepth 1 -type f -name 'slim-*' | wc -l)" -eq 8
+          cat .release-stage/slim-* > /tmp/mm-engine-public-release.b64
           base64 -d /tmp/mm-engine-public-release.b64 > /tmp/mm-engine-public-release.tar.xz
-          echo "97014d02e5fe4668d7a831af90d686cd20b5ac15dab5bd6fee0dd39fa052ece3  /tmp/mm-engine-public-release.tar.xz" | sha256sum -c -
+          echo "5e6687d98270cdc43a7a17e8112c06b9b78a34f6425e514448c04e7d49431cae  /tmp/mm-engine-public-release.tar.xz" | sha256sum -c -
 
           rm -rf /tmp/mm-engine-public-release
           mkdir -p /tmp/mm-engine-public-release
           tar -xJf /tmp/mm-engine-public-release.tar.xz -C /tmp/mm-engine-public-release
+
+          # The two sample fonts are identical to the DejaVuSans.ttf shipped on
+          # the ubuntu-latest runner. Verify the exact bytes before restoring
+          # the two deduplicated copies into the release tree.
+          FONT=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf
+          test -f "$FONT"
+          echo "ae7b7855e115a5966d8b1b3f80f254ccc117ec86f9965e202ee2940453837280  $FONT" | sha256sum -c -
+          install -D -m 0644 "$FONT" /tmp/mm-engine-public-release/samples/Hello2D/assets/DejaVuSans.ttf
+          install -D -m 0644 "$FONT" /tmp/mm-engine-public-release/samples/InputDemo/assets/DejaVuSans.ttf
 
           test "$(find /tmp/mm-engine-public-release -type f | wc -l)" -eq 133
           test -f /tmp/mm-engine-public-release/README.md
