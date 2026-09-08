@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>MMEngine.Animation</AssemblyName>
+    <RootNamespace>MMEngine.Animation</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MMEngine.Core/MMEngine.Core.csproj" />
+    <ProjectReference Include="../MMEngine.Scene/MMEngine.Scene.csproj" />
+  </ItemGroup>
+</Project>

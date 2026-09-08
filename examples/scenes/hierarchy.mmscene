@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "name": "Hierarchy example",
+  "objects": [
+    {
+      "id": "root",
+      "name": "Root",
+      "transform": {
+        "position": [0, 0, 0],
+        "rotation": [0, 0, 0, 1],
+        "scale": [1, 1, 1]
+      }
+    },
+    {
+      "id": "child",
+      "name": "Rotating child",
+      "parent": "root",
+      "transform": {
+        "position": [1.5, 0, 0],
+        "rotation": [0, 0, 0, 1],
+        "scale": [0.5, 0.5, 0.5]
+      },
+      "components": [
+        { "type": "MMEngine.Animation.TransformSpinner", "properties": { "radiansPerSecond": 1.0 } }
+      ]
+    }
+  ]
+}

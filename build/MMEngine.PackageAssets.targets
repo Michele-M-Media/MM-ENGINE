@@ -1,0 +1,17 @@
+<Project>
+  <ItemGroup>
+    <MmPackageAsset Include="$(MSBuildProjectDirectory)/assets/**/*" />
+  </ItemGroup>
+
+  <!-- SharpProspero's stock driver gathers sce_sys/sce_module after ProsperoLink. This target places
+       application assets directly in the module staging root before that packaging phase. -->
+  <Target Name="MMEngineCopyPackageAssets" AfterTargets="ProsperoLink"
+          Condition="'$(OutputPath)' != ''">
+    <RemoveDir Directories="$(OutputPath)assets" Condition="Exists('$(OutputPath)assets')" />
+    <MakeDir Directories="$(OutputPath)assets" Condition="'@(MmPackageAsset)' != ''" />
+    <Copy SourceFiles="@(MmPackageAsset)"
+          DestinationFiles="@(MmPackageAsset->'$(OutputPath)assets/%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true"
+          Condition="'@(MmPackageAsset)' != ''" />
+  </Target>
+</Project>

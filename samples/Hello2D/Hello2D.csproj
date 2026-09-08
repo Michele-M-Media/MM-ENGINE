@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$(SharpProsperoRoot)/build/Prospero.App.props" />
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>MMEngine.Hello2D</AssemblyName>
+    <RootNamespace>MMEngine.Samples.Hello2D</RootNamespace>
+    <ProsperoModuleName>eboot.bin</ProsperoModuleName>
+    <ProsperoHeapHardLimitBytes>268435456</ProsperoHeapHardLimitBytes>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/MMEngine.Platform.PS5/MMEngine.Platform.PS5.csproj" />
+    <ProjectReference Include="../../src/MMEngine.UI/MMEngine.UI.csproj" />
+    <ProjectReference Include="$(SharpProsperoRoot)/src/SharpProspero/SharpProspero.csproj" />
+    <None Update="sce_sys/**/*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <Import Project="$(SharpProsperoRoot)/build/Prospero.App.targets" />
+  <Import Project="../../build/MMEngine.PackageAssets.targets" />
+</Project>

@@ -1,0 +1,18 @@
+<Solution>
+  <Project Path="src/MMEngine.Core/MMEngine.Core.csproj" />
+  <Project Path="src/MMEngine.Scene/MMEngine.Scene.csproj" />
+  <Project Path="src/MMEngine.Assets/MMEngine.Assets.csproj" />
+  <Project Path="src/MMEngine.Input/MMEngine.Input.csproj" />
+  <Project Path="src/MMEngine.Animation/MMEngine.Animation.csproj" />
+  <Project Path="src/MMEngine.Graphics2D/MMEngine.Graphics2D.csproj" />
+  <Project Path="src/MMEngine.Graphics3D/MMEngine.Graphics3D.csproj" />
+  <Project Path="src/MMEngine.UI/MMEngine.UI.csproj" />
+  <Project Path="src/MMEngine.Platform.PS5/MMEngine.Platform.PS5.csproj" />
+  <Project Path="tools/MMEngine.Cli/MMEngine.Cli.csproj" />
+  <Project Path="tools/MMEngine.TextureConverter/MMEngine.TextureConverter.csproj" />
+  <Project Path="samples/Hello2D/Hello2D.csproj" />
+  <Project Path="samples/Hello3D/Hello3D.csproj" />
+  <Project Path="samples/InputDemo/InputDemo.csproj" />
+  <Project Path="samples/ModelViewer/ModelViewer.csproj" />
+  <Project Path="tests/MMEngine.Tests/MMEngine.Tests.csproj" />
+</Solution>

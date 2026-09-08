@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>MMEngine.Scene</AssemblyName>
+    <RootNamespace>MMEngine.Scene</RootNamespace>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MMEngine.Core/MMEngine.Core.csproj" />
+  </ItemGroup>
+</Project>

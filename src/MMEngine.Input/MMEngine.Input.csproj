@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>MMEngine.Input</AssemblyName>
+    <RootNamespace>MMEngine.Input</RootNamespace>
+  </PropertyGroup>
+</Project>

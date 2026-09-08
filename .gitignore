@@ -1,0 +1,13 @@
+artifacts/
+bin/
+obj/
+out/
+TestResults/
+*.user
+*.suo
+*.log
+.vs/
+.idea/
+.vscode/
+samples/ModelViewer/assets/local-*
+local-assets/

@@ -1,0 +1,9 @@
+<Solution>
+  <Project Path="src/MMEngine.Core/MMEngine.Core.csproj" />
+  <Project Path="src/MMEngine.Scene/MMEngine.Scene.csproj" />
+  <Project Path="src/MMEngine.Assets/MMEngine.Assets.csproj" />
+  <Project Path="src/MMEngine.Input/MMEngine.Input.csproj" />
+  <Project Path="src/MMEngine.Animation/MMEngine.Animation.csproj" />
+  <Project Path="tools/MMEngine.Cli/MMEngine.Cli.csproj" />
+  <Project Path="tests/MMEngine.Tests/MMEngine.Tests.csproj" />
+</Solution>

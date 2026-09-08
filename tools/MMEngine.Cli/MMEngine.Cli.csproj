@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>mmengine</AssemblyName>
+    <RootNamespace>MMEngine.Cli</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/MMEngine.Assets/MMEngine.Assets.csproj" />
+    <ProjectReference Include="../../src/MMEngine.Scene/MMEngine.Scene.csproj" />
+  </ItemGroup>
+</Project>

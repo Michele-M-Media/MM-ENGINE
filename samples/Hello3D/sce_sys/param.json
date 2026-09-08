@@ -1,0 +1,20 @@
+{
+  "applicationCategoryType": 0,
+  "attribute": 0,
+  "attribute2": 0,
+  "attribute3": 0,
+  "attribute4": 0,
+  "category": 0,
+  "contentId": "UP9000-PPSA99141_00-MMENGINEHELLO3D0",
+  "downloadDataSize": 0,
+  "localizedParameters": {
+    "defaultLanguage": "en-US",
+    "en-US": { "titleName": "MM ENGINE - Hello 3D" },
+    "it-IT": { "titleName": "MM ENGINE - Hello 3D" }
+  },
+  "masterVersion": "01.00",
+  "titleId": "PPSA99141",
+  "version": "01.00",
+  "applicationDrmType": "free",
+  "contentVersion": "01.000.000"
+}

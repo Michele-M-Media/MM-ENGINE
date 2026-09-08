@@ -1,0 +1,16 @@
+{
+  "name": "SharpProspero",
+  "version": "0.8.0",
+  "projectLicenseDeclaredByDependency": "GPL-3.0-or-later",
+  "acceptedArchiveSha256": [
+    "db85157b7d46ba6d19b9bb995395fcdd2f7d28b2cf619aa5e1f4a0d573334054",
+    "b36ed7c93e3b4b7296eef3bd999886e2d3b1b62294585e8700bba9429e82b8c1"
+  ],
+  "sourceChecks": {
+    "src/SharpProspero/Graphics/Renderer3D.cs": "0e5ccc177574de379ac15412cd4f7533e63a471eb9b02d15c53404588718a29e",
+    "src/SharpProspero/Application/AppConfig.cs": "b0afff31e00b4537f3a7e694a445e23031cc57e8edd53b891e48c66ddb4342c1",
+    "src/SharpProspero/Graphics/DisplayDevice.cs": "8123c4139d514085cfc6c04300fa2114592d83e6454fbbef491f1785be363d3c",
+    "build/build-app.ps1": "3af323a28913c0ed6aab19d3e671a4d305a67eced56511786fa45c90dab0f043"
+  },
+  "note": "The two supplied archives extract to identical 585-file source trees after top-level-root normalization."
+}

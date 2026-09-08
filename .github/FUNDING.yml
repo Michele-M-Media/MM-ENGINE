@@ -1,6 +1,6 @@
 # Repository funding configuration for MM ENGINE.
-# GitHub will surface the Sponsor button when the listed GitHub Sponsors
-# profile is active and eligible.
+# The Sponsor button is shown when the listed GitHub Sponsors profile is active
+# and GitHub considers the account/repository eligible.
 
 github:
   - Michele-M-Media

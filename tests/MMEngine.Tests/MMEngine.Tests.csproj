@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>MMEngine.Tests</AssemblyName>
+    <RootNamespace>MMEngine.Tests</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/MMEngine.Core/MMEngine.Core.csproj" />
+    <ProjectReference Include="../../src/MMEngine.Scene/MMEngine.Scene.csproj" />
+    <ProjectReference Include="../../src/MMEngine.Assets/MMEngine.Assets.csproj" />
+    <ProjectReference Include="../../src/MMEngine.Input/MMEngine.Input.csproj" />
+    <ProjectReference Include="../../src/MMEngine.Animation/MMEngine.Animation.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,53 @@
+# Original MM ENGINE fixture. Three named objects and materials exercise multi-mesh conversion.
+mtllib model-viewer.mtl
+
+o pedestal
+usemtl base_dark
+v -1.20 -1.10 -0.70
+v  1.20 -1.10 -0.70
+v  1.20 -0.70 -0.70
+v -1.20 -0.70 -0.70
+v -1.20 -1.10  0.70
+v  1.20 -1.10  0.70
+v  1.20 -0.70  0.70
+v -1.20 -0.70  0.70
+f 1 4 3 2
+f 5 6 7 8
+f 1 2 6 5
+f 2 3 7 6
+f 3 4 8 7
+f 4 1 5 8
+
+o crystal
+usemtl core_cyan
+v  0.00  1.35  0.00
+v  0.00 -0.62  0.00
+v -0.82  0.08  0.00
+v  0.82  0.08  0.00
+v  0.00  0.08 -0.82
+v  0.00  0.08  0.82
+f 9 11 13
+f 9 13 12
+f 9 12 14
+f 9 14 11
+f 10 13 11
+f 10 12 13
+f 10 14 12
+f 10 11 14
+
+o orbit_band
+usemtl accent_violet
+v -1.05 -0.02 -0.15
+v  1.05 -0.02 -0.15
+v  1.05  0.18 -0.15
+v -1.05  0.18 -0.15
+v -1.05 -0.02  0.15
+v  1.05 -0.02  0.15
+v  1.05  0.18  0.15
+v -1.05  0.18  0.15
+f 15 18 17 16
+f 19 20 21 22
+f 15 16 20 19
+f 16 17 21 20
+f 17 18 22 21
+f 18 15 19 22

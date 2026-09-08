@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>MMEngine.UI</AssemblyName>
+    <RootNamespace>MMEngine.UI</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MMEngine.Graphics2D/MMEngine.Graphics2D.csproj" />
+  </ItemGroup>
+</Project>

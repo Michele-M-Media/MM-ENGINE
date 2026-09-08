@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>mmtexture</AssemblyName>
+    <RootNamespace>MMEngine.TextureConverter</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(SharpProsperoRoot)/tools/SharpProspero.Texture/SharpProspero.Texture.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,666 @@
+MM ENGINE v0.1-alpha
+COMPLETE BUILD, PACKAGING, AND DIAGNOSTICS GUIDE
+================================================
+
+English public-release edition.
+This guide is derived from the real MM ENGINE repository, its build wrappers,
+the staged validation history, and the documented SharpProspero boundary.
+
+INDEX
+-----
+  0. How to read this guide
+  1. What "build all of MM ENGINE" means
+  2. Repository structure
+  3. Required tools
+  4. Windows environment setup
+  5. Linux environment setup
+  6. doctor.ps1
+  7. Portable validation
+  8. CLI, mesh, scene and texture tools
+  9. Full managed build vs PS5 build
+ 10. Build one PS5 sample
+ 11. Build all samples
+ 12. Output modes
+ 13. Exact PS5 pipeline order
+ 14. NativeAOT runtime support
+ 15. What to distribute/deploy for testing
+ 16. The four samples
+ 17. Title ID and content ID
+ 18. System version and module compatibility
+ 19. Clean builds
+ 20. Logs and evidence
+ 21. Environment errors
+ 22. NativeAOT / restore errors
+ 23. Link errors
+ 24. Modules / metadata / system version / sign errors
+ 25. Package / install errors
+ 26. CE-108255-1 and immediate crashes
+ 27. Hello2D startup / current isolation
+ 28. InputDemo errors
+ 29. Hello3D errors
+ 30. ModelViewer errors
+ 31. Black screen / buffer / flicker / color issues
+ 32. DualSense problems
+ 33. Asset pipeline errors
+ 34. Intentional limitations
+ 35. Hardware test procedure
+ 36. Fast failure isolation
+ 37. Create a new application
+ 38. Copy-ready recipes
+ 39. Final checklist
+ 40. Reference files
+
+0. HOW TO READ THIS GUIDE
+-------------------------
+
+Three evidence labels are used throughout:
+
+  [REPO]      behavior verified directly in the public repository.
+  [DIAGNOSIS] a technically plausible cause inferred from the failing stage.
+  [HARDWARE]  a result that requires execution on a real authorized PS5 test environment.
+
+Do not collapse managed compilation, NativeAOT publish, PS5 link, sign/wrap,
+package creation, installation, and hardware execution into one word such as
+"build". A successful earlier phase does not prove a later phase.
+
+1. WHAT "BUILD ALL OF MM ENGINE" MEANS
+--------------------------------------
+
+Level A — portable runtime:
+  MMEngine.Core, Scene, Assets, Input, Animation, CLI and tests.
+
+Level B — asset pipeline:
+  OBJ/GLB -> .mmmesh, .mmscene validation, deterministic ModelViewer fixture,
+  and GNF preprocessing.
+
+Level C — full managed solution:
+  adds Graphics2D, Graphics3D, UI, Platform.PS5, TextureConverter and samples.
+
+Level D — PS5 application build:
+  NativeAOT -> runtime support -> ProsperoLink -> assets -> gather -> Modules
+  -> Metadata -> System version -> Sign -> Folder -> optional Package.
+
+Level E — hardware validation:
+  install/deploy the complete output and test the exact capability.
+
+A useful release build sequence is:
+
+  dotnet restore MMEngine.Portable.slnx
+  dotnet build MMEngine.Portable.slnx -c Release
+  dotnet run --project tests/MMEngine.Tests/MMEngine.Tests.csproj -c Release
+  ./scripts/build-assets.ps1
+  ./scripts/build-all-samples.ps1 -Output Folder
+
+Use Package only when package creation itself is the behavior being tested.
+
+2. REPOSITORY STRUCTURE
+-----------------------
+
+Key paths:
+
+  MMEngine.Portable.slnx     host-only solution.
+  MMEngine.slnx              full solution including PS5-facing projects.
+  Directory.Build.props      common .NET 10 / C# / deterministic settings.
+  global.json                .NET SDK baseline.
+  scripts/doctor.ps1         environment and SharpProspero baseline checks.
+  scripts/test-host.ps1      portable test wrapper.
+  scripts/build-assets.ps1   deterministic asset regeneration.
+  scripts/build-ps5.ps1      canonical one-project PS5 wrapper.
+  scripts/build-all-samples.ps1
+                              sequential four-sample build.
+  build/MMEngine.PackageAssets.targets
+                              copies sample assets into the staged module.
+  src/                       engine modules.
+  tools/                     CLI and texture converter.
+  samples/                   Hello2D, Hello3D, InputDemo, ModelViewer.
+  docs/                      architecture, API, status, validation and hardware docs.
+
+3. REQUIRED TOOLS
+--------------------
+
+.NET:
+  Use a non-preview .NET 10 SDK compatible with global.json.
+
+PowerShell:
+  Windows PowerShell 5.1 or pwsh is required by the build wrappers.
+
+Linux for NativeAOT:
+  On Windows, the SharpProspero flow uses WSL for the linux-x64 NativeAOT object.
+  .NET 10 must therefore also exist inside WSL.
+
+SharpProspero:
+  Set SHARPPROSPERO_ROOT to the SDK root containing build/, src/SharpProspero/
+  and tools/. Do not point it at src/ or src/SharpProspero/.
+
+Hardware:
+  Use only a lawful/authorized PS5 homebrew test environment.
+
+4. WINDOWS ENVIRONMENT SETUP
+----------------------------
+
+Example:
+
+  Set-Location 'D:\dev\MM-ENGINE'
+  $env:SHARPPROSPERO_ROOT = 'D:\dev\SharpProspero-0.8'
+
+Check:
+
+  dotnet --version
+  Test-Path "$env:SHARPPROSPERO_ROOT\build\build-app.ps1"
+  Test-Path "$env:SHARPPROSPERO_ROOT\src\SharpProspero\SharpProspero.csproj"
+  wsl.exe -e bash -lc "dotnet --version"
+
+Then run:
+
+  .\scripts\doctor.ps1
+
+For the simplest first package attempt:
+
+  START-HERE.bat Hello2D
+
+5. LINUX ENVIRONMENT SETUP
+--------------------------
+
+Example:
+
+  cd /path/MM-ENGINE
+  export SHARPPROSPERO_ROOT=/path/SharpProspero-0.8
+  dotnet --version
+  pwsh ./scripts/doctor.ps1
+
+A direct sample build:
+
+  pwsh ./scripts/build-ps5.ps1 \
+      -ProjectPath ./samples/Hello2D/Hello2D.csproj \
+      -Output Folder
+
+WSL is not needed when the host itself is Linux.
+
+6. DOCTOR.PS1
+--------------------
+
+doctor.ps1 checks the host before a PS5-facing build. It verifies the .NET
+version, the SDK root, the expected SharpProspero project/build files and the
+critical source baseline recorded by eng/sdk-baseline.json.
+
+If doctor reports a baseline mismatch, stop. Do not continue with a modified
+SDK and then interpret renderer or runtime failures as MM ENGINE evidence.
+
+7. PORTABLE VALIDATION
+----------------------
+
+Run:
+
+  dotnet restore MMEngine.Portable.slnx
+  dotnet build MMEngine.Portable.slnx -c Release
+  dotnet run --project tests/MMEngine.Tests/MMEngine.Tests.csproj -c Release
+
+The portable tests cover engine behaviors such as transform hierarchy,
+component lifecycle, timing validation, deterministic mesh round-trip, input
+edges, scene JSON and tween completion.
+
+Portable success does not create eboot.bin and does not validate PS5 APIs.
+
+8. CLI, MESH, SCENE AND TEXTURE TOOLS
+-------------------------------------
+
+Typical commands:
+
+  dotnet run --project tools/MMEngine.Cli/MMEngine.Cli.csproj -- help
+  dotnet run --project tools/MMEngine.Cli/MMEngine.Cli.csproj -- mesh import model.obj model.mmmesh
+  dotnet run --project tools/MMEngine.Cli/MMEngine.Cli.csproj -- mesh validate model.mmmesh
+  dotnet run --project tools/MMEngine.Cli/MMEngine.Cli.csproj -- scene validate examples/scenes/hierarchy.mmscene
+
+The texture converter is a host front end over the external SharpProspero
+texture tooling. Producing a valid GNF does not imply that v0.1-alpha's 3D
+renderer samples that texture; sampled 3D textures remain unclaimed.
+
+9. FULL MANAGED BUILD VS PS5 BUILD
+----------------------------------
+
+dotnet build MMEngine.slnx -c Release
+
+checks managed compilation when the external SDK references resolve. It does
+not by itself run the complete NativeAOT/link/sign/package pipeline.
+
+Use scripts/build-ps5.ps1 or scripts/build-all-samples.ps1 for device outputs.
+
+10. BUILD ONE PS5 SAMPLE
+------------------------
+
+Hello2D Package:
+
+  .\scripts\build-ps5.ps1 `
+      -ProjectPath .\samples\Hello2D\Hello2D.csproj `
+      -Output Package
+
+Hello2D Folder:
+
+  .\scripts\build-ps5.ps1 `
+      -ProjectPath .\samples\Hello2D\Hello2D.csproj `
+      -Output Folder
+
+Use Folder for runtime debugging because it performs the signed module path but
+stops before package creation.
+
+11. BUILD ALL SAMPLES
+---------------------
+
+Package:
+
+  ./scripts/build-all-samples.ps1 -Output Package
+
+Folder:
+
+  ./scripts/build-all-samples.ps1 -Output Folder
+
+Order:
+  1. Hello2D
+  2. Hello3D
+  3. InputDemo
+  4. ModelViewer
+
+A failure in one child build means the aggregate run is not complete.
+
+12. OUTPUT MODES
+--------------------
+
+Folder:
+  complete signed out/module tree, no PKG.
+
+Package:
+  the same module tree plus package creation.
+
+Portable:
+  host solution concept, not a PS5 driver output.
+
+Executable:
+  sample application module kind, normally producing eboot.bin.
+
+Prx:
+  loadable library module kind, not used by the four samples.
+
+Payload:
+  a different lower-level loader model in the SDK. MM ENGINE's standard
+  sample wrapper does not expose it. It is not a shortcut to a simpler eboot.
+
+13. EXACT PS5 PIPELINE ORDER
+----------------------------
+
+The expected order is:
+
+  1. MM ENGINE environment/doctor wrapper
+  2. NativeAOT object publish
+  3. runtime support collection
+  4. ProsperoLink
+  5. MM ENGINE asset copy
+  6. project gather (sce_sys / optional sce_module)
+  7. optional staged Title ID adjustment
+  8. Modules dependency processing
+  9. metadata processing
+ 10. system-version processing
+ 11. sign/wrap
+ 12. Folder result
+ 13. optional Package creation
+ 14. MM ENGINE output checks
+
+Always diagnose the first failing named phase.
+
+14. NATIVEAOT RUNTIME SUPPORT
+-----------------------------
+
+The device object is created for linux-x64 and then linked with the external
+runtime-support archives selected by the SharpProspero driver. The exact
+runtime pack is resolved from the project's assets rather than guessed.
+
+For an executable application the bootstrapper/runtime libraries are linked
+into eboot.bin; they are not copied as arbitrary standalone files into
+out/module.
+
+15. WHAT TO DISTRIBUTE/DEPLOY FOR TESTING
+-----------------------------------------
+
+Use the complete out/module tree, not only eboot.bin, whenever the sample uses
+assets, sce_sys metadata or application modules.
+
+Typical asset paths become:
+
+  /app0/assets/DejaVuSans.ttf
+  /app0/assets/mm-mark.png
+  /app0/assets/model.mmmesh
+
+Copying only eboot.bin can therefore create a false asset-not-found diagnosis.
+
+16. THE FOUR SAMPLES
+--------------------
+
+Hello2D:
+  framebuffer/2D, images, font, UI and input. Its full font path is still the
+  current useful hardware boundary.
+
+Hello3D:
+  experimental AGC multi-draw with procedural/background geometry and
+  independent transforms.
+
+InputDemo:
+  pad connection, button edges, sticks/triggers and output APIs.
+
+ModelViewer:
+  deterministic .mmmesh load and camera/orbit controls.
+
+Treat each sample as an independent validation target.
+
+17. TITLE ID AND CONTENT ID
+---------------------------
+
+The source sample metadata uses development identifiers. If an environment has
+a collision, use the wrapper's TitleId override rather than editing source
+metadata ad hoc.
+
+The override must match the wrapper's required format and is applied to staged
+metadata, preserving the repository source file.
+
+18. SYSTEM VERSION AND MODULE COMPATIBILITY
+-------------------------------------------
+
+Module dependency processing and system-version policy happen before sign/wrap.
+A module from an incompatible environment can prevent the app from launching
+before Main even when managed code is correct.
+
+Keep module provenance and target environment consistent.
+
+19. CLEAN BUILDS
+--------------------
+
+Remove generated bin/, obj/, out/ and artifacts/ only when a clean rebuild is
+needed. Do not commit them to the source repository.
+
+The public release intentionally contains source inputs and reproducible tools,
+not generated device/package output.
+
+20. LOGS AND EVIDENCE
+---------------------
+
+Keep complete wrapper transcripts while diagnosing. Record:
+
+  - exact repository commit;
+  - exact SharpProspero baseline;
+  - .NET version (host and WSL if used);
+  - failing pipeline phase;
+  - hashes of relevant outputs;
+  - exact probe/sample name;
+  - whether the result is build-only or hardware-observed.
+
+Remove private paths/IDs/secrets before publishing logs.
+
+21. ENVIRONMENT ERRORS
+----------------------
+
+Common causes:
+
+  - wrong .NET major version;
+  - .NET 10 missing inside WSL;
+  - SHARPPROSPERO_ROOT points to the wrong directory;
+  - modified SDK baseline;
+  - missing PowerShell;
+  - stale generated outputs.
+
+Run doctor first; fix environment errors before changing engine code.
+
+22. NATIVEAOT / RESTORE ERRORS
+------------------------------
+
+Inspect the publish output and verify a fresh object exists after the run.
+Because the driver can encounter host-link noise that is irrelevant to the
+device object, the correct evidence is the newly produced object and the next
+device-link stage, not a stale file from an earlier attempt.
+
+23. LINK ERRORS
+--------------------
+
+A link failure is separate from managed compilation. Check:
+
+  - device object was actually regenerated;
+  - runtime-support pack matches the build;
+  - project references resolve against the intended SDK;
+  - no stale or host-only object is substituted;
+  - the first undefined/duplicate symbol rather than the final summary line.
+
+24. MODULES / METADATA / SYSTEM VERSION / SIGN ERRORS
+-----------------------------------------------------
+
+Do not skip these stages manually and then call the result "eboot.bin ready".
+Folder output is useful precisely because it completes these device-facing
+steps before stopping ahead of packaging.
+
+25. PACKAGE / INSTALL ERRORS
+----------------------------
+
+A signed Folder build can be useful even when Package fails. Keep package
+creation as a separate diagnostic gate.
+
+For installation problems, verify Title ID collisions, staged metadata,
+complete module tree and the package tool's own first error.
+
+26. CE-108255-1 AND IMMEDIATE CRASHES
+-------------------------------------
+
+CE-108255-1 does not identify a unique subsystem.
+
+Possible classes include:
+
+  - loader/sign/module/metadata issues before Main;
+  - NativeAOT runtime initialization;
+  - display/direct-memory setup;
+  - module loading;
+  - asset path/decode/font work;
+  - framebuffer/present;
+  - later renderer/input code.
+
+Use staged probes rather than changing several subsystems at once.
+
+27. HELLO2D STARTUP / CURRENT ISOLATION
+---------------------------------------
+
+The original aggregate Hello2D-style path performed module loads, font asset
+read, TrueType font construction, PNG read/decode and UI work.
+
+Staged hardware testing later proved the normal display/pad/canvas/platform-2D
+path. Follow-up asset probes also advanced through module loading and direct
+asset reads.
+
+The current useful boundary is TrueType font construction, centered on
+TrueTypeFont.Load. Continue from that exact point; do not reset the diagnosis
+to generic display/package theories without contradictory evidence.
+
+28. INPUTDEMO ERRORS
+--------------------
+
+Separate:
+
+  - connection/open;
+  - raw snapshot;
+  - edge tracking;
+  - stick/trigger normalization;
+  - vibration;
+  - light-bar output.
+
+The staged pad path passing is positive evidence for the basic input route, but
+it does not automatically validate every output effect.
+
+29. HELLO3D ERRORS
+--------------------
+
+Do not use the 3D sample to prove capabilities that the renderer intentionally
+does not implement.
+
+v0.1-alpha's 3D path is experimental and color-oriented. Depth, sampled
+textures and 3D blending remain separate blocked gates.
+
+30. MODELVIEWER ERRORS
+----------------------
+
+First verify:
+
+  - /app0/assets/model.mmmesh exists;
+  - the file validates with the CLI;
+  - deterministic fixture hash/layout is correct;
+  - GPU upload succeeds;
+  - camera/orbit input is independent from mesh decode.
+
+Texture/material metadata in .mmmesh does not imply sampled material textures
+in the v0.1-alpha renderer.
+
+31. BLACK SCREEN / BUFFER / FLICKER / COLOR ISSUES
+--------------------------------------------------
+
+Check framebuffer dimensions, channel order, target layout, staging-vs-scanout
+ownership, flip sequence and whether more than one subsystem is trying to own
+the frame.
+
+Avoid guessed AGC register writes. If a required state sequence is not
+source-backed, keep the capability blocked.
+
+32. DUALSENSE PROBLEMS
+----------------------
+
+Confirm the controller connection and raw snapshot before debugging edges or
+output effects. Log stable numeric values rather than drawing conclusions from
+a single UI symptom.
+
+Do not publish device-specific secrets or private identifiers in issue logs.
+
+33. ASSET PIPELINE ERRORS
+-------------------------
+
+For .mmmesh:
+
+  import -> validate -> deterministic re-encode -> compare.
+
+For staged package assets:
+
+  verify source assets exist, build target copies them, and the complete
+  out/module tree is used for deployment.
+
+For the known alpha crash, direct asset read already crossed staged hardware;
+the remaining useful focus is font construction.
+
+34. INTENTIONAL LIMITATIONS
+---------------------------
+
+Not bugs in v0.1-alpha:
+
+  - no verified 3D depth path;
+  - no sampled 3D material textures;
+  - no verified 3D alpha blending;
+  - no verified mixed CPU UI + tiled AGC GPU composition;
+  - no claim that a host-generated GNF means runtime sampling works.
+
+These are explicit future work items.
+
+35. HARDWARE TEST PROCEDURE
+---------------------------
+
+Recommended progression:
+
+  1. build Folder;
+  2. record commit/toolchain versions;
+  3. deploy the complete module tree;
+  4. run the smallest probe/sample;
+  5. record first visible/logged marker;
+  6. change one subsystem at a time;
+  7. preserve passing stages;
+  8. stop at the first reproducible failure boundary.
+
+See HARDWARE_TEST_PLAN.md and HARDWARE_TEST_LOG.md.
+
+36. FAST FAILURE ISOLATION
+--------------------------
+
+Ask these questions in order:
+
+  A. Did portable build/tests pass?
+  B. Was a fresh NativeAOT object produced?
+  C. Did ProsperoLink succeed?
+  D. Did Modules succeed?
+  E. Did metadata/system-version/sign succeed?
+  F. Did the normal display probe reach hardware?
+  G. Did the pad/canvas/platform probe reach hardware?
+  H. Did module loads succeed?
+  I. Did direct asset read succeed?
+  J. Does TrueTypeFont.Load fail?
+
+For the current alpha history, the useful investigation is already at J.
+
+37. CREATE A NEW APPLICATION
+----------------------------
+
+Start from one of the four samples. Keep portable logic in portable projects,
+PS5 platform APIs in MMEngine.Platform.PS5, and renderer-specific native types
+in graphics projects.
+
+New scene-loadable components need a reflection-free factory path suitable for
+NativeAOT.
+
+Use the canonical build wrapper rather than copying low-level tool invocations
+into a new project.
+
+38. COPY-READY RECIPES
+----------------------
+
+Portable:
+
+  dotnet restore MMEngine.Portable.slnx
+  dotnet build MMEngine.Portable.slnx -c Release
+  dotnet run --project tests/MMEngine.Tests/MMEngine.Tests.csproj -c Release
+
+Windows sample Folder:
+
+  $env:SHARPPROSPERO_ROOT='D:\dev\SharpProspero-0.8'
+  .\scripts\doctor.ps1
+  .\scripts\build-ps5.ps1 -ProjectPath .\samples\Hello2D\Hello2D.csproj -Output Folder
+
+All samples:
+
+  .\scripts\build-all-samples.ps1 -Output Folder
+
+39. FINAL CHECKLIST
+--------------------
+
+Before publishing source:
+
+  - GPL-3.0-or-later files present;
+  - third-party notices present;
+  - no SDK archive/private reference assets;
+  - no bin/obj/out/artifacts/packages;
+  - manifest regenerated;
+  - status docs distinguish host/build/hardware;
+  - blocked 3D capabilities remain marked blocked;
+  - FUNDING/SPONSORS configuration present;
+  - portable CI present.
+
+Before claiming a feature works on PS5:
+  require an exact hardware test of that feature.
+
+40. REFERENCE FILES
+--------------------
+
+Primary repository references:
+
+  README.md
+  BUILDING.md
+  ARCHITECTURE.md
+  ROADMAP.md
+  docs/GETTING_STARTED.md
+  docs/BUILD_AND_CLI.md
+  docs/STATUS_MATRIX.md
+  docs/VALIDATION.md
+  docs/VALIDATION_UPDATE_2026-09-08.md
+  docs/HARDWARE_TEST_PLAN.md
+  docs/HARDWARE_STATUS.md
+  docs/HARDWARE_TEST_LOG.md
+  docs/TROUBLESHOOTING.md
+  scripts/doctor.ps1
+  scripts/build-ps5.ps1
+  scripts/build-all-samples.ps1
+  build/MMEngine.PackageAssets.targets

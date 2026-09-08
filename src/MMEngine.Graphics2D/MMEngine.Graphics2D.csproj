@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>MMEngine.Graphics2D</AssemblyName>
+    <RootNamespace>MMEngine.Graphics2D</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MMEngine.Core/MMEngine.Core.csproj" />
+    <ProjectReference Include="../MMEngine.Scene/MMEngine.Scene.csproj" />
+    <ProjectReference Include="$(SharpProsperoRoot)/src/SharpProspero/SharpProspero.csproj" />
+  </ItemGroup>
+</Project>

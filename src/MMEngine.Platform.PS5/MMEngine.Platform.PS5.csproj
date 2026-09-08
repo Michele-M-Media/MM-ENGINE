@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>MMEngine.Platform.PS5</AssemblyName>
+    <RootNamespace>MMEngine.Platform.PS5</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MMEngine.Core/MMEngine.Core.csproj" />
+    <ProjectReference Include="../MMEngine.Scene/MMEngine.Scene.csproj" />
+    <ProjectReference Include="../MMEngine.Assets/MMEngine.Assets.csproj" />
+    <ProjectReference Include="../MMEngine.Input/MMEngine.Input.csproj" />
+    <ProjectReference Include="../MMEngine.Graphics2D/MMEngine.Graphics2D.csproj" />
+    <ProjectReference Include="../MMEngine.Graphics3D/MMEngine.Graphics3D.csproj" />
+    <ProjectReference Include="$(SharpProsperoRoot)/src/SharpProspero/SharpProspero.csproj" />
+  </ItemGroup>
+</Project>

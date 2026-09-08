@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>MMEngine.Assets</AssemblyName>
+    <RootNamespace>MMEngine.Assets</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MMEngine.Core/MMEngine.Core.csproj" />
+  </ItemGroup>
+</Project>
