@@ -23,18 +23,32 @@ jobs:
         run: |
           set -euo pipefail
           test -f .release-stage/READY
-          test "$(find .release-stage -maxdepth 1 -type f -name 'slim-*' | wc -l)" -eq 8
-          cat .release-stage/slim-* > /tmp/mm-engine-public-release.b64
+          for f in slim-00 slim-01 slim-02 slim-03 slim-04 slim-05a slim-05b slim-05c slim-05d; do
+            test -f ".release-stage/$f"
+          done
+          test "$(find .release-stage -maxdepth 1 -type f -name 'slim-*' | wc -l)" -eq 9
+          cat \
+            .release-stage/slim-00 \
+            .release-stage/slim-01 \
+            .release-stage/slim-02 \
+            .release-stage/slim-03 \
+            .release-stage/slim-04 \
+            .release-stage/slim-05a \
+            .release-stage/slim-05b \
+            .release-stage/slim-05c \
+            .release-stage/slim-05d \
+            > /tmp/mm-engine-public-release.b64
+          test "$(wc -c < /tmp/mm-engine-public-release.b64)" -eq 116000
           base64 -d /tmp/mm-engine-public-release.b64 > /tmp/mm-engine-public-release.tar.xz
           echo "5e6687d98270cdc43a7a17e8112c06b9b78a34f6425e514448c04e7d49431cae  /tmp/mm-engine-public-release.tar.xz" | sha256sum -c -
+          xz -t /tmp/mm-engine-public-release.tar.xz
 
           rm -rf /tmp/mm-engine-public-release
           mkdir -p /tmp/mm-engine-public-release
           tar -xJf /tmp/mm-engine-public-release.tar.xz -C /tmp/mm-engine-public-release
 
           # The two sample fonts are identical to the DejaVuSans.ttf shipped on
-          # the ubuntu-latest runner. Verify the exact bytes before restoring
-          # the two deduplicated copies into the release tree.
+          # the ubuntu-latest runner. Verify exact bytes before restoring them.
           FONT=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf
           test -f "$FONT"
           echo "ae7b7855e115a5966d8b1b3f80f254ccc117ec86f9965e202ee2940453837280  $FONT" | sha256sum -c -
