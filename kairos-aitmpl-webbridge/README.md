@@ -1,7 +1,7 @@
-# Kairos Forge Native AITMPL Registry v0.7
+# Kairos Forge Native AITMPL MCP v0.8
 
-This branch hosts a **public, read-only** MCP registry of every valid item in AITMPL Catalog API v1 (agents, skills, commands, MCPs, hooks, settings, loops, mods). The MCP service does not run installers, hooks, external MCP servers, third-party CLI agents, or any paid model APIs.
+Source v0.8 is stored as an archive at `kairos-aitmpl-webbridge/bridge-v0.1.tar.gz` for compatibility with the EXISTING Render build configuration. The production MCP endpoint is HTTPS `/mcp`.
 
-`kairos-aitmpl-webbridge/bridge-v0.1.tar.gz` is the v0.7 source payload kept at the stable path expected by Render's existing build command. The packaged server retains the legacy four MCP tools and adds six registry and preparation tools. No secrets or user projects are included.
+This public service has 14 read-only tools: 10 catalog queries plus automatic skill routing/preparation, in-memory static syntax checking, and diff preview. No shell/process execution, secrets, or user-project file access is permitted. Private PC control requires a separate authenticated MCP.
 
-"Registered" means indexed and available to prepare/inspect via MCP. Hooks, mods and external MCPs remain descriptors only until separately implemented and authorized. AITMPL component licenses are independent and remain in effect.
+The AITMPL registry indexes all 8 catalog categories. A component is not automatically executed by being indexed. Third-party text remains untrusted and license restrictions apply.
