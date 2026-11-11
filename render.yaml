@@ -1,0 +1,25 @@
+# Solo demo: servizio HTTPS gratuito. Nessun piano a pagamento.
+services:
+  - type: web
+    name: kairos-forge-mcp-private-web
+    runtime: python
+    plan: free
+    region: frankfurt
+    branch: kairos-forge-mcp-web-v03
+    autoDeployTrigger: "off"
+    healthCheckPath: /health
+    buildCommand: mkdir -p kairos-runtime && tar -xzf kairos-forge-mcp/gateway-v03.tar.gz -C kairos-runtime && python -m pip install -r kairos-runtime/requirements.txt
+    startCommand: cd kairos-runtime && uvicorn kairos.server:app --host 0.0.0.0 --port $PORT --workers 1
+    envVars:
+      - key: KAIROS_MCP_TOKEN
+        generateValue: true
+      - key: KAIROS_AUDIT_KEY
+        generateValue: true
+      - key: KAIROS_WORKSPACES
+        value: '{"demo":"./demo"}'
+      - key: KAIROS_CHECKS
+        value: '{"demo":[["python","-m","py_compile","hello.py"]]}'
+      - key: KAIROS_STATE_DIR
+        value: ./private-state
+      - key: KAIROS_REMOTE_WORKERS
+        value: '{}'
