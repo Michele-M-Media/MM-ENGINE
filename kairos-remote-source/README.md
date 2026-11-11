@@ -1,0 +1,3 @@
+# Kairos Forge external remote MCP
+
+A secured owner-only MCP is mounted at /private/mcp. Two long independent Bearer secrets are configured as Render environment variables. A PC worker polls /worker/claim and returns its results via /worker/complete. No inbound PC port, no arbitrary shell, no user source uploaded into this public repo. Current remote worker operations: tree, read, search, git_status, checks configured locally. Source-only; no credentials. The AITMPL MCP remains read-only at /mcp. The free Render filesystem is ephemeral: jobs may be lost during service restart. OAuth and standard ChatGPT custom-MCP connectivity still require separate verification and account permissions.
